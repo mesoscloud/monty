@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+import getopt
+import os
+import sys
+import time
+
+import jinja2
+import yaml
+
+
+def main():
+
+    opts, args = getopt.getopt(sys.argv[1:], '1')
+
+    total = 0
+    for opt, arg in opts:
+        if opt == '-1':
+            total = 1
+
+    while not os.path.exists('.monty.yml') and os.getcwd() != '/':
+        os.chdir('..')
+
+    mtimes = {}
+    count = 0
+    config = None
+    while True:
+
+        if count:
+            time.sleep(1)
+        count += 1
+
+        path = '.monty.yml'
+        mtime = os.path.getmtime(path)
+
+        if config is None or mtimes.get(path, 0.0) < mtime:
+            with open(path) as f:
+                config = yaml.load(jinja2.Template(f.read()).render())
+            mtimes.clear()
+            mtimes[path] = mtime
+
+        for i, task in enumerate(config):
+            path = os.path.join(task['build'], 'Dockerfile')
+            mtime = os.path.getmtime(path)
+
+            if mtimes.get(path, 0.0) >= mtime:
+                continue
+            mtimes[path] = mtime
+
+            if 'image' in task:
+                cmd = "docker build -t %s %s" % (task['image'][0], task['build'])
+                info(cmd)
+                os.system(cmd)
+
+                for image in task['image'][1:]:
+                    cmd = "docker tag -f %s %s" % (task['image'][0], image)
+                    info(cmd)
+                    os.system(cmd)
+            else:
+                cmd = "docker build %s" % task['build']
+                info(cmd)
+                os.system(cmd)
+
+        if total != 0 and count >= total:
+            break
+
+
+def info(*args):
+    print(u"\U0001F339  \x1b[1;39m%s\x1b[0m" % ' '.join([str(arg) for arg in args]))
+
+
+if __name__ == '__main__':
+    main()

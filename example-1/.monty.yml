@@ -1,0 +1,4 @@
+- build: 0.1.0
+  image:
+    - example-1:0.1.0
+    - example-1:latest
