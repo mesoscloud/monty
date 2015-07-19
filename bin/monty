@@ -41,21 +41,42 @@ def main():
 
         for i, task in enumerate(config):
             path = os.path.join(task['build'], 'Dockerfile')
-            mtime = os.path.getmtime(path)
 
-            if mtimes.get(path, 0.0) >= mtime:
+
+            dependent = []
+            with open(path) as f:
+                x = f.read()
+            for line in x.splitlines():
+                if line.strip():
+                    if line.split()[0] in ('ADD', 'COPY'):
+                        dependent.append(os.path.join(task['build'], line.split()[1]))
+
+            uptodate = True
+                        
+
+            for p in [path] + dependent:
+                mtime = os.path.getmtime(p)
+                if mtimes.get(p, 0.0) < mtime:
+                    uptodate = False
+                    break
+
+
+            if uptodate:
                 continue
-            mtimes[path] = mtime
+            
+            for p in [path] + dependent:
+                mtimes[p] = os.path.getmtime(p)
+
 
             if 'image' in task:
                 cmd = "docker build -t %s %s" % (task['image'][0], task['build'])
                 info(cmd)
-                os.system(cmd)
-
-                for image in task['image'][1:]:
-                    cmd = "docker tag -f %s %s" % (task['image'][0], image)
-                    info(cmd)
-                    os.system(cmd)
+                r = os.system(cmd)
+                if r == 0:
+                    for image in task['image'][1:]:
+                        cmd = "docker tag -f %s %s" % (task['image'][0], image)
+                        info(cmd)
+                        os.system(cmd)
             else:
                 cmd = "docker build %s" % task['build']
                 info(cmd)
