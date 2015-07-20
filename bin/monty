@@ -2,6 +2,7 @@
 
 import getopt
 import os
+import subprocess
 import sys
 import time
 
@@ -39,7 +40,16 @@ def main():
             mtimes.clear()
             mtimes[path] = mtime
 
+        tests = None
         for i, task in enumerate(config):
+            if 'tests' in task:
+                tests = task['tests']
+            
+        for i, task in enumerate(config):
+
+            if not 'build' in task:
+                continue
+
             path = os.path.join(task['build'], 'Dockerfile')
 
 
@@ -73,6 +83,25 @@ def main():
                 info(cmd)
                 r = os.system(cmd)
                 if r == 0:
+
+                    if tests is not None:
+                        for j, test in enumerate(tests):
+
+                            if 'env' in test:
+                                cmd = ["docker", "run", "--rm"] + ['--env=%s' % x for x in test['env']] + [task['image'][0], 'sh', '-c', test['cmd']]
+                                info(test['cmd'], ' #', '; '.join(test['env']))
+                            else:
+                                cmd = ["docker", "run", "--rm", task['image'][0], 'sh', '-c', test['cmd']]
+                                info(test['cmd'])
+
+                            p = subprocess.Popen(cmd)
+                            r = p.wait()
+
+                            if r == 0:
+                                print G("test passed")
+                            else:
+                                print R("test failed")
+                                
                     for image in task['image'][1:]:
                         cmd = "docker tag -f %s %s" % (task['image'][0], image)
                         info(cmd)
@@ -89,6 +118,14 @@ def main():
 def info(*args):
     print(u"\U0001F339  \x1b[1;39m%s\x1b[0m" % ' '.join([str(arg) for arg in args]))
 
+
+def G(*args):
+    return u"\x1b[1;32m%s\x1b[0m" % ' '.join([str(arg) for arg in args])
+
+
+def R(*args):
+    return u"\x1b[1;31m%s\x1b[0m" % ' '.join([str(arg) for arg in args])
+   
 
 if __name__ == '__main__':
     main()
