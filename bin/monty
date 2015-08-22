@@ -61,7 +61,8 @@ def main():
             for line in x.splitlines():
                 if line.strip():
                     if line.split()[0] in ('ADD', 'COPY'):
-                        dependent.append(os.path.join(task['build'], line.split()[1]))
+                        if not '://' in line.split()[1]:
+                            dependent += [os.path.join(task['build'], x) for x in line.split()[1:-1]]
 
             uptodate = True
 
@@ -89,18 +90,20 @@ def main():
                     if tests is not None:
                         for j, test in enumerate(tests):
 
+                            cmd = ["docker", "run", "--rm"]
+
                             if 'env' in test:
-                                if test['cmd'].strip():
-                                    cmd = ["docker", "run", "--rm"] + ['--env=%s' % x for x in test['env']] + [task['image'][0], 'sh', '-c', test['cmd']]
-                                else:
-                                    cmd = ["docker", "run", "--rm"] + ['--env=%s' % x for x in test['env']] + [task['image'][0]]
-                                info(test['cmd'], ' #', '; '.join(test['env']))
+                                cmd += ['--env=%s' % x for x in test['env']]
+                            if 'volumes' in test:
+                                cmd += ['--volume=%s' % x for x in test['volumes']]
+                            if 'user' in test:
+                                cmd += ['--user=%s' % test['user']]
+
+                            if test['cmd'].strip():
+                                cmd += [task['image'][0], 'sh', '-c', test['cmd']]
                             else:
-                                if test['cmd'].strip():
-                                    cmd = ["docker", "run", "--rm", task['image'][0], 'sh', '-c', test['cmd']]
-                                else:
-                                    cmd = ["docker", "run", "--rm", task['image'][0]]
-                                info(test['cmd'])
+                                cmd += [task['image'][0]]
+                            info(test['cmd'])
 
                             class Output(threading.Thread):
 
