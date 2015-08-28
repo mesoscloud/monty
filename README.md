@@ -1,6 +1,6 @@
 # monty
 
-Thank you Monty.
+Monty
 
 ```
 pip install -r requirements.txt
