@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""Thank you Monty."""
+
 import Queue
 import getopt
 import os
