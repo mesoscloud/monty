@@ -54,7 +54,7 @@ def main():
             if not 'build' in task:
                 continue
 
-            path = os.path.join(task['build'], 'Dockerfile')
+            path = os.path.join(str(task['build']), 'Dockerfile')
 
 
             dependent = []
@@ -64,7 +64,7 @@ def main():
                 if line.strip():
                     if line.split()[0] in ('ADD', 'COPY'):
                         if not '://' in line.split()[1]:
-                            dependent += [os.path.join(task['build'], x) for x in line.split()[1:-1]]
+                            dependent += [os.path.join(str(task['build']), x) for x in line.split()[1:-1]]
 
             uptodate = True
 
@@ -84,7 +84,7 @@ def main():
 
 
             if 'image' in task:
-                cmd = "docker build -t %s %s" % (task['image'][0], task['build'])
+                cmd = "docker build -t %s %s" % (task['image'][0], str(task['build']))
                 info(cmd)
                 r = os.system(cmd)
                 if r == 0:
@@ -158,7 +158,7 @@ def main():
                         info(cmd)
                         os.system(cmd)
             else:
-                cmd = "docker build %s" % task['build']
+                cmd = "docker build %s" % str(task['build'])
                 info(cmd)
                 os.system(cmd)
 
