@@ -18,10 +18,10 @@ def main():
 
     opts, args = getopt.getopt(sys.argv[1:], '1')
 
-    total = 0
+    once = False
     for opt, arg in opts:
         if opt == '-1':
-            total = 1
+            once = True
 
     while not os.path.exists('.monty.yml') and os.getcwd() != '/':
         os.chdir('..')
@@ -139,15 +139,21 @@ def main():
                             if 'stdout' in test:
                                 if ''.join(stdout.lines) != test['stdout']:
                                     print R("test failed (stdout %r != %r)" % (''.join(stdout.lines), test['stdout']))
+                                    if once:
+                                        sys.exit(1)
                                     continue
 
                             if 'stderr' in test:
                                 if ''.join(stderr.lines) != test['stderr']:
                                     print R("test failed (stderr %r != %r)" % (''.join(stderr.lines), test['stderr']))
+                                    if once:
+                                        sys.exit(1)
                                     continue
 
                             if r != 0:
                                 print R("test failed (exit %s)" % r)
+                                if once:
+                                    sys.exit(1)
                                 continue
 
                             print G("test passed")
@@ -162,7 +168,7 @@ def main():
                 info(cmd)
                 os.system(cmd)
 
-        if total != 0 and count >= total:
+        if once:
             break
 
 
