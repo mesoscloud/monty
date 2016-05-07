@@ -163,10 +163,22 @@ def main():
                         cmd = "docker tag -f %s %s" % (task['image'][0], image)
                         info(cmd)
                         os.system(cmd)
+
+                else:
+                    print R("build failed (exit %s)" % r)
+                    if once:
+                        sys.exit(1)
+                    continue
+
+
             else:
                 cmd = "docker build %s" % str(task['build'])
                 info(cmd)
-                os.system(cmd)
+                r = os.system(cmd)
+                if r != 0:
+                    print R("build failed (exit %s)" % r)
+                    if once:
+                        sys.exit(1)
 
         if once:
             break
